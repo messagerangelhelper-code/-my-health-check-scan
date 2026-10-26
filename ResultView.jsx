@@ -130,7 +130,12 @@ export default function ResultView({ product, result, settings, onScanAgain }) {
         {r.verdict === "unknown" ? (
           <p>This product is in the database, but nobody has added its ingredient list yet. Type or paste the ingredients from the package below to check them.</p>
         ) : (
-          <p><Summary r={r} /></p>
+          <>
+            <p><Summary r={r} /></p>
+            {r.nova === 4 && r.verdict !== "red" && (
+              <p className="small">Note: this is an ultra-processed food. Nothing on it is banned, but eating fewer ultra-processed foods is a common health goal.</p>
+            )}
+          </>
         )}
       </section>
 
