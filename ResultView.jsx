@@ -87,7 +87,7 @@ function CompareTable({ a, b, onClose }) {
   );
 }
 
-export default function ResultView({ product, result, settings, onScanAgain }) {
+export default function ResultView({ product, result, settings, onScanAgain, premium, onUpgrade }) {
   const r = result;
   const [alts, setAlts] = useState(null); // null = not loaded, [] = none found
   const [altsBusy, setAltsBusy] = useState(false);
@@ -226,8 +226,13 @@ export default function ResultView({ product, result, settings, onScanAgain }) {
 
       {!isManual && mainCategory(product) && r.verdict !== "unknown" && (
         <section className="card">
-          <h3>Healthier options</h3>
-          {alts === null ? (
+          <h3>Healthier options {!premium && <span className="pill-premium">Premium</span>}</h3>
+          {!premium ? (
+            <>
+              <p className="muted">See similar products ({categoryLabel(mainCategory(product)).toLowerCase()}) with cleaner ingredients, and compare them side by side.</p>
+              <button type="button" className="btn-secondary" onClick={onUpgrade}>Unlock with Premium</button>
+            </>
+          ) : alts === null ? (
             <>
               <p className="muted">Look for similar products ({categoryLabel(mainCategory(product)).toLowerCase()}) with cleaner ingredients.</p>
               <button type="button" className="btn-primary" onClick={findBetter} disabled={altsBusy}>{altsBusy ? "Looking…" : "Find healthier options"}</button>

@@ -7,6 +7,8 @@ import { fetchProduct, cleanBarcode, productName } from "./foodApi.js";
 import { loadSettings, saveSettings, loadHistory, addToHistory, clearHistory } from "./storage.js";
 import { ALLERGENS, AVOID_OPTIONS } from "./ingredients.js";
 import { BRAND } from "./brand.js";
+import Premium from "./Premium.jsx";
+import { isPremium, checkPremiumOnce, FREE_HISTORY, PREMIUM_HISTORY } from "./premium.js";
 
 const VERDICT_ICON = { red: "⛔", amber: "⚠️", green: "✅", unknown: "❔" };
 
@@ -31,6 +33,19 @@ export default function App() {
   const [product, setProduct] = useState(null);
   const [error, setError] = useState("");
   const [lastCode, setLastCode] = useState("");
+  const [premium, setPremium] = useState(isPremium);
+  const [notice, setNotice] = useState("");
+
+  useEffect(() => {
+    checkPremiumOnce().then((status) => {
+      setPremium(isPremium());
+      if (status === "activated") {
+        setNotice("Premium is active. Thank you! Healthier options, comparisons, your avoid list and full history are unlocked.");
+      } else if (status === "expired") {
+        setNotice("Your Premium plan has ended. Scanning and banned-ingredient flags are still free.");
+      }
+    });
+  }, []);
 
   useEffect(() => {
     const root = document.documentElement.style;
@@ -65,7 +80,8 @@ export default function App() {
         return;
       }
       setProduct(p);
-      const r = analyze(p, loadSettings());
+      const s0 = loadSettings();
+      const r = analyze(p, isPremium() ? s0 : { ...s0, avoid: [] });
       setHistory(addToHistory({ code: p.code, name: productName(p), brand: p.brands || "", verdict: r.verdict, time: Date.now() }));
       setView("result");
     } catch (e) {
@@ -82,11 +98,15 @@ export default function App() {
     setView("result");
   }
 
-  const result = product ? analyze(product, settings) : null;
+  // Free users: the avoid list is a Premium feature, so it's left out of the checks.
+  const effective = premium ? settings : { ...settings, avoid: [] };
+  const result = product ? analyze(product, effective) : null;
   const chosen = [
-    ...ALLERGENS.filter((a) => settings.allergens.includes(a.id)).map((a) => a.name),
-    ...AVOID_OPTIONS.filter((o) => settings.avoid.includes(o.id)).map((o) => o.name),
+    ...ALLERGENS.filter((a) => effective.allergens.includes(a.id)).map((a) => a.name),
+    ...AVOID_OPTIONS.filter((o) => effective.avoid.includes(o.id)).map((o) => o.name),
   ];
+  const shownHistory = history.slice(0, premium ? PREMIUM_HISTORY : FREE_HISTORY);
+  const goPremium = () => setView("premium");
 
   return (
     <div className="app">
@@ -101,10 +121,21 @@ export default function App() {
       </header>
 
       <main>
+        {notice && (
+          <div className="notice" role="status">
+            <span>{notice}</span>
+            <button type="button" className="link" onClick={() => setNotice("")} aria-label="Dismiss">✕</button>
+          </div>
+        )}
+
+        {view === "premium" && <Premium premium={premium} onBack={() => setView(product ? "result" : "home")} />}
+
         {view === "settings" && (
           <Settings
             settings={settings}
             firstTime={!settings.setupDone}
+            premium={premium}
+            onUpgrade={goPremium}
             onChange={updateSettings}
             onDone={() => { updateSettings({ ...settings, setupDone: true }); setView(product ? "result" : "home"); }}
           />
@@ -142,6 +173,18 @@ export default function App() {
               <ManualCheck onCheck={(t) => checkText(t)} hint="No barcode? Type or paste the ingredients from the package." />
             </section>
 
+            <section className={premium ? "card premium-teaser on" : "card premium-teaser"}>
+              {premium ? (
+                <p><strong>Premium ✓</strong> <span className="muted">Healthier options, comparisons, avoid list and full history are on.</span></p>
+              ) : (
+                <>
+                  <h2>Go Premium</h2>
+                  <p className="muted">Healthier options, side-by-side comparisons, your personal avoid list and full scan history. From $2.99 a month.</p>
+                  <button type="button" className="btn-primary" onClick={goPremium}>See plans</button>
+                </>
+              )}
+            </section>
+
             {history.length > 0 && (
               <section className="card">
                 <div className="row-between">
@@ -149,7 +192,7 @@ export default function App() {
                   <button type="button" className="link" onClick={() => setHistory(clearHistory())}>Clear</button>
                 </div>
                 <ul className="history">
-                  {history.map((h) => (
+                  {shownHistory.map((h) => (
                     <li key={h.code}>
                       <button type="button" onClick={() => lookUp(h.code)}>
                         <span aria-hidden="true">{VERDICT_ICON[h.verdict] || "•"}</span>
@@ -158,6 +201,9 @@ export default function App() {
                     </li>
                   ))}
                 </ul>
+                {!premium && history.length > FREE_HISTORY && (
+                  <p className="muted small">Showing your last {FREE_HISTORY}. <button type="button" className="link" onClick={goPremium}>Premium</button> keeps your last {PREMIUM_HISTORY}.</p>
+                )}
               </section>
             )}
 
@@ -195,8 +241,8 @@ export default function App() {
 
         {view === "result" && product && result && (
           <>
-            <ResultView key={product.code || product.ingredients_text} product={product} result={result} settings={settings}
-              onScanAgain={() => setView("scan")} />
+            <ResultView key={(product.code || product.ingredients_text) + String(premium)} product={product} result={result} settings={effective}
+              onScanAgain={() => setView("scan")} premium={premium} onUpgrade={goPremium} />
             {result.verdict === "unknown" && (
               <section className="card">
                 <ManualCheck onCheck={(t) => checkText(t, { ...product })} title="Ingredients from the package" />

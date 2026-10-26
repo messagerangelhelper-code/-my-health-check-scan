@@ -165,3 +165,20 @@ details summary { font-weight: 700; cursor: pointer; }
 .compare td.better { background: var(--ok-soft); font-weight: 700; }
 
 .disclaimer { color: var(--muted); font-size: 0.82rem; text-align: center; padding: 4px 8px; }
+
+/* Premium */
+.pill-premium { display: inline-block; margin-left: 6px; padding: 1px 9px; border-radius: 999px; background: #fff1c2; color: #7a5300; font-size: 0.72rem; font-weight: 800; vertical-align: middle; }
+.chips.locked .chip { opacity: 0.55; min-height: 0; padding: 6px 12px; }
+.premium-teaser { border: 2px solid #f2cf63; background: linear-gradient(180deg, #fffaf0, #fff); }
+.premium-teaser.on { border-color: var(--line); background: #fff; }
+.premium-teaser p { margin: 0 0 8px; }
+.premium-card h2 { margin-bottom: 6px; }
+.premium-list { margin: 4px 0 12px; padding-left: 20px; }
+.premium-list li { margin-bottom: 4px; }
+.plans { display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; }
+.plan { display: flex; justify-content: space-between; align-items: center; gap: 12px; border: 2px solid var(--line); border-radius: 14px; padding: 12px 14px; }
+.plan.best { border-color: var(--green); background: var(--mint); }
+.plan-note { margin-left: 8px; font-size: 0.75rem; font-weight: 800; color: var(--green); background: #fff; border: 1px solid var(--green); border-radius: 999px; padding: 1px 8px; }
+.plan-price { margin: 4px 0 0; font-size: 1.3rem; font-weight: 800; }
+.notice { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; background: var(--ok-soft); border: 2px solid var(--green-2); border-radius: 12px; padding: 10px 12px; }
+.notice .link { padding: 0 4px; text-decoration: none; }

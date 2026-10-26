@@ -35,7 +35,7 @@ export function loadHistory() {
 }
 
 export function addToHistory(entry) {
-  const list = [entry, ...loadHistory().filter((h) => h.code !== entry.code)].slice(0, 12);
+  const list = [entry, ...loadHistory().filter((h) => h.code !== entry.code)].slice(0, 50);
   write(HISTORY_KEY, list);
   return list;
 }

@@ -16,7 +16,7 @@ function Chips({ options, selected, onToggle, label }) {
 }
 
 // "Who are you shopping for?" - allergies, things to avoid and big text.
-export default function Settings({ settings, onChange, onDone, firstTime }) {
+export default function Settings({ settings, onChange, onDone, firstTime, premium, onUpgrade }) {
   const toggle = (field) => (id) => {
     const list = settings[field].includes(id) ? settings[field].filter((x) => x !== id) : [...settings[field], id];
     onChange({ ...settings, [field]: list });
@@ -33,8 +33,18 @@ export default function Settings({ settings, onChange, onDone, firstTime }) {
       <h3>Allergies</h3>
       <Chips options={ALLERGENS} selected={settings.allergens} onToggle={toggle("allergens")} label="Allergies" />
 
-      <h3>Things I'd rather avoid</h3>
-      <Chips options={AVOID_OPTIONS} selected={settings.avoid} onToggle={toggle("avoid")} label="Things to avoid" />
+      <h3>Things I'd rather avoid {!premium && <span className="pill-premium">Premium</span>}</h3>
+      {premium ? (
+        <Chips options={AVOID_OPTIONS} selected={settings.avoid} onToggle={toggle("avoid")} label="Things to avoid" />
+      ) : (
+        <>
+          <div className="chips locked" aria-hidden="true">
+            {AVOID_OPTIONS.map((o) => <span key={o.id} className="chip">{o.name}</span>)}
+          </div>
+          <p className="muted small">Get alerts for the things you choose to avoid with Premium.</p>
+          <button type="button" className="btn-secondary" onClick={onUpgrade}>See Premium</button>
+        </>
+      )}
 
       <h3>Easier reading</h3>
       <label className="toggle">
