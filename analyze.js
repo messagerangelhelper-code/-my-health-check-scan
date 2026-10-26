@@ -44,10 +44,18 @@ export const NOVA = {
   4: "Ultra-processed food",
 };
 
+// Drinks are measured per 100 ml, everything else per 100 g.
+// Coffee grounds, tea bags and drink powders are filed under "beverages" but aren't drinks yet.
+const NOT_YET_DRINKS = /^en:(?:coffees|ground-coffees|instant-coffees|coffee-beans|coffee-capsules|coffee-pods|teas|tea-bags|black-teas|green-teas|herbal-teas|infusions|cocoa-powders|powdered-drinks|drink-mixes|beverage-preparations|sweeteners)$/;
+const READY_DRINKS = /^en:[a-z-]*(?:drinks|sodas|juices|waters|nectars|iced-coffees|iced-teas|milks)$/;
+
 export function isDrink(product) {
-  return (product.categories_tags || []).some(
-    (c) => c === "en:beverages" || (/^en:[a-z-]*(?:drinks|beverages|sodas|juices|waters|teas|coffees)$/.test(c) && !/foods-and-beverages$/.test(c))
-  );
+  const tags = (product.categories_tags || []).filter((c) => c !== "en:powdered-drinks");
+  const beverage = tags.some((c) => c === "en:beverages" || (/^en:[a-z-]*(?:drinks|beverages|sodas|juices|waters)$/.test(c) && !/foods-and-beverages$/.test(c)));
+  if (!beverage) return false;
+  const notYet = (product.categories_tags || []).some((c) => NOT_YET_DRINKS.test(c));
+  const ready = tags.some((c) => READY_DRINKS.test(c) && !/-and-beverages$/.test(c));
+  return !notYet || ready;
 }
 
 export function nutritionFacts(product) {
