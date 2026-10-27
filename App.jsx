@@ -8,7 +8,9 @@ import { loadSettings, saveSettings, loadHistory, addToHistory, clearHistory } f
 import { ALLERGENS, AVOID_OPTIONS } from "./ingredients.js";
 import { BRAND } from "./brand.js";
 import Premium from "./Premium.jsx";
-import { isPremium, checkPremiumOnce, FREE_HISTORY, PREMIUM_HISTORY } from "./premium.js";
+import { isPremium, checkPremiumOnce, syncAccount, FREE_HISTORY, PREMIUM_HISTORY } from "./premium.js";
+import Account from "./Account.jsx";
+import { supabase } from "./account.js";
 
 const VERDICT_ICON = { red: "⛔", amber: "⚠️", green: "✅", unknown: "❔" };
 
@@ -45,6 +47,15 @@ export default function App() {
         setNotice("Your Premium plan has ended. Scanning and banned-ingredient flags are still free.");
       }
     });
+    // Signing in or out on this device updates Premium from the account.
+    const { data } = supabase.auth.onAuthStateChange((event) => {
+      if (event !== "SIGNED_IN" && event !== "SIGNED_OUT") return;
+      syncAccount().then((status) => {
+        setPremium(isPremium());
+        if (status === "activated") setNotice("Welcome back! Premium from your CashCow account is on.");
+      });
+    });
+    return () => data.subscription.unsubscribe();
   }, []);
 
   useEffect(() => {
@@ -206,6 +217,14 @@ export default function App() {
                 )}
               </section>
             )}
+
+            <section className="card community-link">
+              <h2>💬 CashCow Community</h2>
+              <p className="muted">Swap tips with other members in the <strong>Food & Health</strong> channel. Uses your free CashCow account.</p>
+              <a className="btn-secondary community-btn" href="https://cashcowai.online/community.html#food" target="_blank" rel="noopener noreferrer">Open the community</a>
+            </section>
+
+            <Account premium={premium} />
 
             <p className="disclaimer">
               Information only, not medical advice. Product data comes from Open Food Facts, a free public database.

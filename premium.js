@@ -2,6 +2,8 @@
 // After paying, Stripe sends the person back here with ?session_id=..., and the
 // app asks CashCow whether that purchase is paid (and, for subscriptions, still active).
 // Premium is remembered on this phone; it's re-checked every few days.
+import { currentToken } from "./account.js";
+
 const API = "https://cashcow-reviews-api.onrender.com";
 const APP = "healthscan";
 const KEY = "mhcs-premium";
@@ -80,14 +82,62 @@ export async function checkPremium() {
   }
 
   const s = read();
-  if (!s || !s.sessionId || Date.now() - (s.checkedAt || 0) < RECHECK_MS) return null;
+  if (s && s.sessionId && s.source !== "account" && Date.now() - (s.checkedAt || 0) >= RECHECK_MS) {
+    try {
+      const r = await verify(s.sessionId);
+      write({ ...s, premium: !!r.premium, plan: r.plan || s.plan, checkedAt: Date.now() });
+      if (s.premium && !r.premium) return (await syncAccount()) === "activated" ? null : "expired";
+      if (!s.premium && r.premium) return "activated";
+    } catch {
+      /* offline or server asleep: keep what we have */
+    }
+  }
+  return syncAccount();
+}
+
+// Signed in with a CashCow account? Then Premium comes from the account, so it
+// works on every device. A purchase made on this phone before signing in is
+// attached to the account the first time they sign in here.
+// Returns "activated", "expired" or null.
+export async function syncAccount() {
+  const token = await currentToken();
+  const s = read();
+  if (!token) {
+    // Signed out: Premium that came from the account stays with the account.
+    if (s && s.source === "account" && s.premium) {
+      write(s.sessionId ? { ...s, premium: false, source: "phone", checkedAt: 0 } : null);
+      return "expired";
+    }
+    return null;
+  }
+  const auth = { Authorization: `Bearer ${token}` };
+  if (s && s.sessionId && s.premium && !s.claimed) {
+    try {
+      const res = await fetch(`${API}/api/entitlements/claim?app=${APP}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json", ...auth },
+        body: JSON.stringify({ session_id: s.sessionId }),
+      });
+      if (res.ok || res.status === 409) write({ ...read(), claimed: true });
+    } catch {
+      /* try again next time */
+    }
+  }
   try {
-    const r = await verify(s.sessionId);
-    write({ ...s, premium: !!r.premium, plan: r.plan || s.plan, checkedAt: Date.now() });
-    if (s.premium && !r.premium) return "expired";
-    if (!s.premium && r.premium) return "activated";
+    const res = await fetch(`${API}/api/entitlements?app=${APP}`, { headers: auth });
+    if (!res.ok) return null;
+    const r = await res.json();
+    const before = read();
+    if (r.premium) {
+      write({ ...(before || {}), premium: true, source: before && before.premium && before.source !== "account" ? before.source || "phone" : "account", plan: r.plan || "", accountCheckedAt: Date.now() });
+      return before && before.premium ? null : "activated";
+    }
+    if (before && before.source === "account" && before.premium) {
+      write({ ...before, premium: false });
+      return "expired";
+    }
   } catch {
-    /* offline or server asleep: keep what we have */
+    /* offline: keep what we have */
   }
   return null;
 }
@@ -95,10 +145,11 @@ export async function checkPremium() {
 // Sends the person to Stripe checkout. Throws a friendly message on failure.
 export async function startCheckout(planId) {
   let res;
+  const token = await currentToken();
   try {
     res = await fetch(`${API}/api/create-checkout-session`, {
       method: "POST",
-      headers: { "Content-Type": "application/json" },
+      headers: { "Content-Type": "application/json", ...(token ? { Authorization: `Bearer ${token}` } : {}) },
       body: JSON.stringify({ plan: planId }),
     });
   } catch {

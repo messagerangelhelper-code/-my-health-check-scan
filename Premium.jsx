@@ -52,7 +52,8 @@ export default function Premium({ premium, onBack }) {
       {error && <p className="error">{error}</p>}
       <p className="muted small">
         Payments are handled securely by Stripe through CashCow. Monthly and yearly plans renew until you cancel.
-        Premium is saved on the phone you buy it on.
+        Signed in to your CashCow account? Premium follows you to every device. Not signed in? It's saved on this phone,
+        and moves to your account the first time you sign in here.
       </p>
       <button type="button" className="link" onClick={onBack}>Not now</button>
     </section>

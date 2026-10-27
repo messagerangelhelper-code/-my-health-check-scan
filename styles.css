@@ -67,7 +67,7 @@ button:disabled { opacity: 0.55; cursor: not-allowed; }
 .button-row { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-top: 8px; }
 
 .label { display: block; font-weight: 700; margin-bottom: 6px; }
-input[type="text"], input:not([type]), textarea {
+input[type="text"], input[type="email"], input[type="password"], input:not([type]), textarea {
   width: 100%; font: inherit; color: var(--ink); background: #fff;
   border: 2px solid var(--line); border-radius: 12px; padding: 12px; min-height: 48px;
 }
@@ -76,6 +76,7 @@ input:focus, textarea:focus { outline: 3px solid #9fd4b6; border-color: var(--gr
 .inline input { flex: 1; min-width: 0; }
 .manual { display: flex; flex-direction: column; gap: 8px; }
 .manual button { align-self: flex-start; }
+.account .chips { margin-bottom: 8px; }
 
 .chips { display: flex; flex-wrap: wrap; gap: 8px; margin: 4px 0 12px; }
 .chip { border: 2px solid var(--line); background: #fff; color: var(--ink); border-radius: 999px; padding: 8px 14px; font-weight: 600; min-height: 44px; }
@@ -182,3 +183,5 @@ details summary { font-weight: 700; cursor: pointer; }
 .plan-price { margin: 4px 0 0; font-size: 1.3rem; font-weight: 800; }
 .notice { display: flex; justify-content: space-between; align-items: flex-start; gap: 10px; background: var(--ok-soft); border: 2px solid var(--green-2); border-radius: 12px; padding: 10px 12px; }
 .notice .link { padding: 0 4px; text-decoration: none; }
+
+.community-btn { display: inline-block; text-decoration: none; text-align: center; }
